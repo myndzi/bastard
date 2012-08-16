@@ -6,7 +6,7 @@ var child_process = require ('child_process');
 var fs = require ('fs');
 var uglify = require ("uglify-js");
 var csso = require ("csso");
-var gzip = require ("gzip");
+var gzip = require('zlib').gzip; // var gzip = require ("zlib");
 var mime = require ('mime');
 var html_minifier = require ('html-minifier')
 

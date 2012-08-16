@@ -47,7 +47,6 @@
   "dependencies": {
     "uglify-js": ">=1.1.1",
     "csso": ">=1.2.8",
-    "gzip": ">=0.1.0",
     "mime": ">=1.2.4",
     "html-minifier": ">=0.4.5",
     "htmlscanner": ">=0.7.0"
