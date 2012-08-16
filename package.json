@@ -1,61 +1,65 @@
 {
-	"name": "bastard",
-	"version": "0.6.8",
-	"description": "A webserver for static files that does things right.",
-	"keywords": "webserver, fingerprint, static",
-	"homepage": "http://jeremy.org/bastard/",
-
-	"bugs": {
-		"email" : "jeremy-bastard@jeremy.org"
-	},
-	
-	"author": {
-		"name": "Jeremy Bornstein",
-		"email": "jeremy@jeremy.org",
-		"url": "http://jeremy.org/"
-	},
-	
-	"files": ["bastard.js", "start.js", "README.md"],
-	"main": "bastard.js",
-	"bin": {
-		"bastard" : "./start.js"
-	},
-	
-	"NOT_REALLY_man" : [ "./man/bastard.1" ],
-	"repository": {
-		"type": "git",
-	  	"url" : "https://github.com/unprolix/bastard"
-	},
-	
-	"config": {
-		"port": 80,
-		"host": null,
-		"base": null,
-		"alwaysCheckModTime": true,
-		"preload": false,
-		"debug": false,
-		"directories": false,
-		"rawURLPrefix": "/raw/",
-		"fingerprintURLPrefix": "/f/",
-		"urlPrefix": "/",
-		"workingDir": "/tmp/bastard"
-	},
-	
-	"scripts": {"start": "node start.js"},
-
-	"dependencies": {
-		"uglify-js": ">=1.1.1",
-		"csso": ">=1.2.8",
-		"gzip": ">=0.1.0",
-		"mime": ">=1.2.4",
-		"html-minifier": ">=0.4.5",
-		"htmlscanner": ">=0.7.0"
-	},
-	
-	"engines": {
-		"node": ">=0.4.12",
-		"npm": ">=1.0.106"
-	}
-
-
+  "name": "bastard",
+  "version": "0.6.8",
+  "description": "A webserver for static files that does things right.",
+  "keywords": "webserver, fingerprint, static",
+  "homepage": "http://jeremy.org/bastard/",
+  "bugs": {
+    "email": "jeremy-bastard@jeremy.org"
+  },
+  "author": {
+    "name": "Jeremy Bornstein",
+    "email": "jeremy@jeremy.org",
+    "url": "http://jeremy.org/"
+  },
+  "files": [
+    "bastard.js",
+    "start.js",
+    "README.md"
+  ],
+  "main": "bastard.js",
+  "bin": {
+    "bastard": "./start.js"
+  },
+  "NOT_REALLY_man": [
+    "./man/bastard.1"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unprolix/bastard"
+  },
+  "config": {
+    "port": 80,
+    "host": null,
+    "base": null,
+    "alwaysCheckModTime": true,
+    "preload": false,
+    "debug": false,
+    "directories": false,
+    "rawURLPrefix": "/raw/",
+    "fingerprintURLPrefix": "/f/",
+    "urlPrefix": "/",
+    "workingDir": "/tmp/bastard"
+  },
+  "scripts": {
+    "start": "node start.js"
+  },
+  "dependencies": {
+    "uglify-js": ">=1.1.1",
+    "csso": ">=1.2.8",
+    "gzip": ">=0.1.0",
+    "mime": ">=1.2.4",
+    "html-minifier": ">=0.4.5",
+    "htmlscanner": ">=0.7.0"
+  },
+  "engines": {
+    "node": ">=0.4.12",
+    "npm": ">=1.0.106"
+  },
+  "readme": "BASTARD\n=======\n\nThe purpose of bastard is to serve static content over the web quickly, according to best practices, in a way that is easy to set up, run, and administer. It is implemented as a module intended to be run from within node.js. It may be invoked as part of another server process, serving only URLs with a given set of prefixes, or it may be the entire server all on its own. It will automatically minify and compress data, cache the data on disk, and verify the validity of its cached data on startup. While running, it keeps cached data in memory and does not expire data from the cache. Restarts should be relatively quick and easy because minified/compressed data will be read from the disk cache on the first request for that item.\n\nAdditionally, bastard will automatically generate cryptographic fingerprints for all files it serves, and return this fingerprint as the value of the Etag header in its responses. Files are available at fingerprinted URLs so that they can be cached indefinitely by client browsers. You can programmatically ask it for the current fingerprinted URL for a file so that you can use that URL in HTML you generate external to the server. When bastard serves fingerprinted files, they are served with very long cache times because those URLs should always serve the same content.\n\nCSS, Javascript, and HTML are minified, including CSS and Javascript inside HTML files. Files of other types are not modified, though they will be compressed for transmission if they're not image files. (Image files are never compressed by this software.) Note that in some rare cases, HTML minification can cause problems. In bastard, the HTML minification is not extremely aggressive and so will probably be fine. You can turn it off with a future config option if you are worried or actually find a problem in practice.\n\n\nInstalling\n==========\n\n        npm install bastard\n\n\nRunning Standalone\n==================\n\nConfigure the settings via npm. There are reasonable defaults but you definitely need to specify the base directory where your files are:\n\n        npm config bastard:base /path/with/good/intentions\n        npm start bastard\n\nIf you are running the standalone server and want to programmatically find out the current fingerprint for a file, make a request for the file with an incorrect fingerprint such as \"BASTARD\". The server's response will contain the valid fingerprint, which you may then parse out and use in your own externally-generated HTML.\n\n\nRunning from your own code\n==========================\n\n1. Create the bastard object:\n\n        var bastard = require ('bastard');\n        var Bastard = bastard.Bastard;\n        var bastardObj = new Bastard (config);\n\n        // if you want to load every file into the cache before you get started:\n        bastardObj.preload (callback);\n\n2. Create your own HttpServer object and pass requests to it from within the associated handler:\n\n        var handled = bastardObj.possiblyHandleRequest (request, response);\n\nIf the above function returns true, the request has been handled and you don't need to do anything else. Depending on how you want to structure your server, you can check bastard before or after your own URLs.\n\n\nTo find out the current fingerprint of a file\n---------------------------------------------\n\n        bastardObj.getFingerprint (filePath, basePath, function (err, fingerprint) {});\n\n    * `filePath`: full path to the file\n    * `basePath`: path to the file within the base directory (may be the same as the URL path for the file)\n    * `callback`: if present, will be called with the first argument being any error (or null) and the second argument being the fingerprint\n\nIf callback is not present and the fingerprint is already known, it will be returned immediately as the result of the function call. If callback is not present and the fingerprint is not already known, the fingerprint will be internally calculated and null will be returned from the function call.\n\nYou only need to specify one of filePath and basePath.\n\nFor an example of how to run bastard from your own code, examine the file start.js in the bastard package.\n\nTo preload the entire base directory\n------------------------------------\n\n\n        bastardObj.preload (function (err) {});\n\nCalling this function and waiting until the callback is invoked will ensure that all fingerprints have been precalculated before any user requests are seen. It does not load all files into memory, but does load all information about each file, and ensure that each file has been minified (where possible) and compressed (when appropriate).\n\n\nConfiguration\n=============\n\nThe following configuration variables may be set with `npm config bastard:xxx yyy` where `xxx` is the name of the parameter and `yyy` is the desired value. More help on configuration variables may be obtained via `npm`. These variables also correspond to keys which may be present in single argument to the `Bastard` object's constructor. (In the constructor, however, the URL patterns all default to null--that is, not checked.)\n\nNote that there are some not-too-complicated subtleties in URL matching.  The raw prefix, if defined, is checked first, followed by the fingerprint prefix (if defined), and then only the regular prefix (if defined)--and the first match is considered to be definitive. This means that with the default values provided in the standalone server, if you have a directory called \"raw\" in your base directory, those files will never be served except as raw or fingerprinted.\n\n\n`base`    Directory where files to be served reside. (Default: empty)\n\n`defaultFileName`\tThe name of the default file when a path ending in '/' is specified. (Default: /index.html/)\n\n`rawURLPrefix`  The prefix for URLs from which raw files should be served. These will be just as they are on disk: not minified, not compressed. (Default: /raw/)\n\n`fingerprintURLPrefix`  The prefix for URLs from which fingerprinted files should be served. The fingerprint will appear in the URLs after this prefix followed by the relative pathname to the file in the base directory. (Default: /f/)\n\n`urlPrefix` The prefix for URLs from which non-fingerprinted files should be served. (Default: /)\n\n`workingDir`  The location for temporary files to be kept. This includes on-disk copies of minified and compressed files that originate in the base directory. (Default: /tmp/bastard.dat)\n\n`debug` If true, turns on some debugging functionality. (Default: false)\n\n`directories` If true, will generate directory listings. (Not yet implemented.) (Default: false)\n\n`pidFile` The file into which to write the PID of the server. (Default: /var/run/bastard.pid)\n\n`virtualHostMode` If true, directories in `base` represent hostnames. Files will be served from the matching directory based on the HTTP 1.1 hostname received. If there is no match, the first compoent (e.g. \"www.\" from \"www.example.com\") is removed and the match is tried again. If there is still no match, the default directory is used. (See below)\n\n`defaultHost` The name of the directory to be used when the HTTP 1.1 hostname matches no other directory. Used only when `virtualHostMode` is true.\n\nStandalone Server\n-----------------\n\nIn addition, the following configuration parameters are used only by the standalone server and do not correspond to constructor arguments:\n\n`host`\tHostname or IP address at which to listen. If empty, will bind to all available IP addresses. (Default: empty)\n\n`port`\tPort number at which to listen. (Default: 80)\n\n`preload`\tIf true, a cache record will be created for each available file before the server begins. This will not load all data from disk, but will calculate all new fingerprints necessary.\n\n\n\nLimitations\n===========\n\nIf the mime type for a file begins with \"image/\", it will not be gzipped.  All other files will be gzipped if the client indicates that it can understand gzipped data. This may not be the best choice for all file types.\n\n\nProject Status\n==============\n\nThis is a project built by the author for his own use. Contributions are welcomed.\n\nThe public repository for the project is found at: https://github.com/unprolix/bastard\n\nFuture features:\n\n* Ability to use an API, instead of the filesystem, as the source of files to be served. This would allow serving data from (e.g.) key/value stores.\n\n* Ability to use an API to upload processed files from base directory to a key/value store--including fingerprinted URLs. This would allow bastard to front for a CDN.\n\n\nLicense\n=======\n\nCopyright 2011, Jeremy Bornstein <jeremy@jeremy.org>\nAll rights reserved.\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are met:\n\n    * Redistributions of source code must retain the above copyright\n      notice, this list of conditions and the following disclaimer.\n\n    * Redistributions in binary form must reproduce the above copyright\n      notice, this list of conditions and the following disclaimer in the\n      documentation and/or other materials provided with the distribution.\n\n    * Neither the name of the project nor the names of its contributors may\n      be used to endorse or promote products derived from this software\n      without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\nANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\nWARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\nDISCLAIMED. IN NO EVENT SHALL JEREMY BORNSTEIN BE LIABLE FOR ANY\nDIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\nLOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND\nON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\nSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.",
+  "_id": "bastard@0.6.8",
+  "dist": {
+    "shasum": "f296645e53ce7bf027797c10f385b6f7203e8731"
+  },
+  "_from": "bastard"
 }

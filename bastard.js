@@ -1,5 +1,6 @@
 'use strict';
 
+var URL = require('url');
 var events = require ('events');
 var child_process = require ('child_process');
 var fs = require ('fs');
@@ -133,7 +134,7 @@ function Bastard (config) {
 					}
 	
 					var tagNameLC = tagName.toLowerCase ();
-					if (tagNameLC == 'script') {
+					if (tagNameLC == 'script' && ('type' in attributes && attributes.type == 'text/javascript')) {
 						insideScriptTag = true;
 						if ('src' in attributes) {
 							// special processing for script tags
@@ -934,20 +935,23 @@ function Bastard (config) {
 	me.possiblyHandleRequest = function (request, response, callback) {
 		if (virtualHostMode) request.baseDir = matchingVirtualHostDir (request.headers.host);
 		else request.baseDir = baseDir;
-
-		if (debug) console.info ("Bastard maybe handling: " + request.url);
+		
+		var parsed = URL.parse(request.url),
+			reqURL = parsed.pathname;
+  
+		if (debug) console.info ("Bastard maybe handling: " + reqURL);
 		// console.info ('fup: ' + fingerprintURLPrefix);
 		// console.info ('up: ' + urlPrefix);
 		
 		if (debug) {
-			if (request.url == '/DEBUG/cache') {
+			if (reqURL == '/DEBUG/cache') {
 				displayCache (response);
 				return;
 			}
 		}
 		
-		if (rawURLPrefix && request.url.indexOf (rawURLPrefix) == 0) {
-			var basePath = request.url.substring (rawPrefixLen);
+		if (rawURLPrefix && reqURL.indexOf (rawURLPrefix) == 0) {
+			var basePath = reqURL.substring (rawPrefixLen);
 			var filePath = request.baseDir + basePath;
 			if (debug) {
 				console.info ("    raw basePath: " + basePath);
@@ -961,8 +965,8 @@ function Bastard (config) {
 			return true;
 		}
 
-		if (request.url.indexOf (fingerprintURLPrefix) == 0) {
-			var base = request.url.substring (fingerprintPrefixLen);
+		if (reqURL.indexOf (fingerprintURLPrefix) == 0) {
+			var base = reqURL.substring (fingerprintPrefixLen);
 			var slashPos = base.indexOf ('/');
 			var basePath = base.substring (slashPos + 1);
 			var fingerprint = base.substring (0, slashPos)
@@ -976,14 +980,14 @@ function Bastard (config) {
 			serve (request, response, filePath, basePath, fingerprint, gzipOK, false, alwaysCheckModTime, ifModifiedSince, headOnly);
 			return true;
 		}
-		if (request.url.indexOf (urlPrefix) == 0) {
+		if (reqURL.indexOf (urlPrefix) == 0) {
 			if (debug) console.info ("Matches the regular URL prefix.");
 			var acceptEncoding = request.headers['accept-encoding'];
 			var gzipOK = acceptEncoding && (acceptEncoding.split(',').indexOf ('gzip') >= 0);
 			var ifModifiedSince = request.headers['if-modified-since']; // fingerprinted files are never modified, so what do we do here?
 			var headOnly = request.method == 'HEAD';
 
-			var basePath = request.url.substring (urlPrefixLen);
+			var basePath = reqURL.substring (urlPrefixLen);
 			
 			//if (basePath.length == 0 || basePath.charAt (basePath.length - 1) == '/') basePath += defaultFileName;
 
@@ -1060,7 +1064,7 @@ function Bastard (config) {
 			
 			return true;
 		}
-		// console.info ("NO MATCH: " + request.url);
+		// console.info ("NO MATCH: " + reqURL);
 		return false; // do not want
 	}
 	
