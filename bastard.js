@@ -42,27 +42,6 @@ function safeHTMLString (s) {
 var JSP = uglify.parser;
 var PRO = uglify.uglify;
 
-function minifyJavascript (data, filePath) {
-	try {
-		var ast = JSP.parse (data); // parse code and get the initial AST
-		ast = PRO.ast_mangle (ast); // get a new AST with mangled names
-		ast = PRO.ast_squeeze (ast); // get an AST with compression optimizations
-		return PRO.gen_code (ast); // compressed code here
-	}
-	catch (err) {
-		// var keys = [];
-		// for (var key in err) { keys.push (key); }
-		// console.error ("Error keys: " + keys);
-		// console.error (err.stack);
-		// console.error (err.type);
-		// console.error (err.message);
-		// console.error (err.name);
-		console.error ("Problem parsing/minifying Javascript for " + filePath + ": " + err.message);
-		return "// Problem parsing Javascript -- see server logs\n" + data;
-	}
-}
-
-
 function Bastard (config) {
 	var me = this;
 	var debug = config.debug;
@@ -95,6 +74,29 @@ function Bastard (config) {
 		});	
 	}
 	
+	me.minifyJavascript = function (data, filePath) {
+		if (/\.min\.js$/.test(filePath)) {
+			if (debug) console.info ('already minified javascript: ' + filePath);
+			return data;
+		}
+		try {
+			var ast = JSP.parse (data); // parse code and get the initial AST
+			ast = PRO.ast_mangle (ast); // get a new AST with mangled names
+			ast = PRO.ast_squeeze (ast); // get an AST with compression optimizations
+			return PRO.gen_code (ast); // compressed code here
+		}
+		catch (err) {
+			// var keys = [];
+			// for (var key in err) { keys.push (key); }
+			// console.error ("Error keys: " + keys);
+			// console.error (err.stack);
+			// console.error (err.type);
+			// console.error (err.message);
+			// console.error (err.name);
+			console.error ("Problem parsing/minifying Javascript for " + filePath + ": " + err.message);
+			return "// Problem parsing Javascript -- see server logs\n" + data;
+		}
+	}
 	me.minifyHTML = function (data, filePath, basePath) {
 		if (debug) {
 			console.info ("******** Minimizing HTML");
@@ -273,7 +275,7 @@ function Bastard (config) {
 	if (errorHandler && !(errorHandler instanceof Function)) errorHandler = null;
 
 	var preprocessors = {
-		'.js': minifyJavascript,
+		'.js': me.minifyJavascript,
 		'.css': csso.justDoIt,
 		'.html': me.minifyHTML
 	};
