@@ -231,13 +231,16 @@ function Bastard (config) {
 				case 4:
 					if (insideScriptTag) {
 						if (debug) console.info ("Minifying inline javascript: " + insideScriptTag);
-						processed += minifyJavascript (token[1], null);
+						processed += me.minifyJavascript (token[1], null);
 					} else if (insideCSSTag) {
 						if (debug) console.info ("Minifying inline CSS: " + insideCSSTag);
 						processed += csso.justDoIt (token[1]);
 					} else {
 						processed += token[1];
 					}
+					break;
+				case 14:
+					processed += "<!DOCTYPE" + token[1] + ">";
 					break;
 			}
 		} while (token[0]);
@@ -255,7 +258,7 @@ function Bastard (config) {
 			collapseWhitespace: false, /* we really want the "collapse into a single space" version of this */
 			collapseBooleanAttributes: true,
 			removeAttributeQuotes: true,
-			removeRedundantAttributes: true,
+			removeRedundantAttributes: false,
 			removeEmptyAttributes: true,
 			removeOptionalTags: true,
 			removeEmptyElements: false		
@@ -821,7 +824,7 @@ function Bastard (config) {
 				return;
 			}
 			
-			var modificationTime = cacheRecordParam.modified;
+			var modificationTime = cacheRecordParam.modified.toString();
 			if (ifModifiedSince && modificationTime && modificationTime <= ifModifiedSince) {
 				response.writeHead (304, {'Server': 'bastard/0.6.8'});
 				response.end ();
@@ -838,7 +841,7 @@ function Bastard (config) {
 						    response.end (errorMessage, 'utf8');
 						}
 					} else {
-						serveDataWithEncoding (response, null, cacheRecordParam.contentType, cacheRecordParam.charset, null, modificationTime, cacheRecordParam.fingerprint, null);						
+						serveDataWithEncoding (response, null, cacheRecordParam.contentType, cacheRecordParam.charset, null, modificationTime, cacheRecordParam.fingerprint, 0);
 					}
 				} else {
 					var cacheTime = fingerprint ? ONE_YEAR : ONE_WEEK;
